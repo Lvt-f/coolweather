@@ -1,5 +1,6 @@
 package com.example.coolweather;
 
+import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.os.Build;
@@ -74,7 +75,8 @@ public class choose_AreaFragment extends Fragment {
      * */
     private  int currentLevel;
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
+
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, Bundle savedInstanceState) {
@@ -82,9 +84,11 @@ public class choose_AreaFragment extends Fragment {
         titleText  = (TextView) view.findViewById(R.id.title_text);
         backButton = (Button) view.findViewById(R.id.back_button);
         listView = (ListView) view.findViewById(R.id.list_view);
-        adapter = new ArrayAdapter<>(getContext()
-                ,android.R.layout.simple_list_item_1
-                ,dataList);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            adapter = new ArrayAdapter<>(getContext()
+                    ,android.R.layout.simple_list_item_1
+                    ,dataList);
+        }
         listView.setAdapter(adapter);
         return view;
     }
@@ -119,7 +123,10 @@ public class choose_AreaFragment extends Fragment {
  * 查询全国所有的省，优先从数据库查询，如果没有查询到再从服务器上查询
  * */
     private void queryProvinces() {
-        if(provinceList.size()>0){
+        titleText.setText("中国");
+        backButton.setVisibility(View.GONE);
+        provinceList = DataSupport.findAll(Province.class);
+        if(provinceList.size() > 0){
             dataList.clear();
             for(Province province : provinceList){
                 dataList.add(province.getProvinceName());
