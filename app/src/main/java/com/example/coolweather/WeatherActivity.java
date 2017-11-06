@@ -9,9 +9,14 @@ import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
+import android.widget.GridLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -47,9 +52,13 @@ public class WeatherActivity extends AppCompatActivity {
     private TextView carWashText;
     private TextView sportText;
     private ImageView bingPicImg;
+    public SwipeRefreshLayout swipeRefresh;
+    public DrawerLayout drawerLayout;
+    private Button navButton;
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
         super.onCreate(savedInstanceState, persistentState);
+
         if(Build.VERSION.SDK_INT >= 21){
             View decorView = getWindow().getDecorView();
             decorView.setSystemUiVisibility(
@@ -60,6 +69,8 @@ public class WeatherActivity extends AppCompatActivity {
         setContentView(R.layout.activity_weather);
 
         //初始化各空间
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navButton = findViewById(R.id.nav_button);
         bingPicImg = findViewById(R.id.bing_pic_img);
         weatherLayout = findViewById(R.id.weather_layout);
         titleCity = findViewById(R.id.title_city);
@@ -72,6 +83,8 @@ public class WeatherActivity extends AppCompatActivity {
         comfortText = findViewById(R.id.confort_text);
         carWashText = findViewById(R.id.car_wash_text);
         sportText = findViewById(R.id.sport_text);
+        swipeRefresh = findViewById(R.id.swipe_refresh);
+        swipeRefresh.setColorSchemeResources(R.color.colorPrimary);
         SharedPreferences prefs  = PreferenceManager.getDefaultSharedPreferences(this);
         String weatherString = prefs.getString("weather",null);
         String bingPic = prefs.getString("bing_pic",null);
@@ -80,20 +93,32 @@ public class WeatherActivity extends AppCompatActivity {
         }else {
             loadBingPic();
         }
+        final String weatherId;
         if(weatherString != null){
             //有缓存时直接解析天气数据
             Weather weather = Utility.handleWeatherResponse(weatherString);
+            weatherId = weather.basic.weatherId;
             weatherLayout.setVisibility(View.INVISIBLE);
             showWeatherInfo(weather);
         }else {
             //无缓存时去服务器查询天气
-            String weatherId = getIntent().getStringExtra("weather_id");
+             weatherId = getIntent().getStringExtra("weather_id");
             weatherLayout.setVisibility(View.INVISIBLE);
             requeatWeather(weatherId);
         }
+        swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                requeatWeather(weatherId);
+            }
+        });
+        navButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
     }
-
-
 
     /**
      * 根据天气id请求城市天气信息
@@ -119,6 +144,7 @@ public class WeatherActivity extends AppCompatActivity {
                             Toast.makeText(WeatherActivity.this,"获取天气信息失败",
                                     Toast.LENGTH_SHORT);
                         }
+                        swipeRefresh.setRefreshing(false);
                     }
                 });
                 loadBingPic();
@@ -130,6 +156,7 @@ public class WeatherActivity extends AppCompatActivity {
                     public void run() {
                         Toast.makeText(WeatherActivity.this,"获取天气信息失败",
                                 Toast.LENGTH_SHORT);
+                        swipeRefresh.setRefreshing(false);
                     }
                 });
             }
