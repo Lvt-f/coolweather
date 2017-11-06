@@ -3,6 +3,7 @@ package com.example.coolweather;
 import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -54,10 +55,10 @@ public class choose_AreaFragment extends Fragment {
      * 省列表
      */
     private List<Province> provinceList;
-   /**
-    * 市列表
-    * */
-   private List<City> cityList;
+    /**
+     * 市列表
+     * */
+    private List<City> cityList;
     /**
      * 县列表
      * */
@@ -84,13 +85,11 @@ public class choose_AreaFragment extends Fragment {
         titleText  = (TextView) view.findViewById(R.id.title_text);
         backButton = (Button) view.findViewById(R.id.back_button);
         listView = (ListView) view.findViewById(R.id.list_view);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             adapter = new ArrayAdapter<>(getContext()
                     ,android.R.layout.simple_list_item_1
                     ,dataList);
-        }
-        listView.setAdapter(adapter);
-        return view;
+            listView.setAdapter(adapter);
+            return view;
     }
 
     @Override
@@ -101,9 +100,16 @@ public class choose_AreaFragment extends Fragment {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if(currentLevel == LEVEL_PROVINCE){
                     selectedProvince = provinceList.get(position);
+                    queryCities();
                 }else if(currentLevel == LEVEL_CITY){
                     selectedCity = cityList.get(position);
                     queryCounties();
+                }else if(currentLevel == LEVEL_COUNTY){
+                    String weatherId = countyList.get(position).getWeatherId();
+                    Intent intent = new Intent(getActivity(),WeatherActivity.class);
+                    intent.putExtra("weather_id",weatherId);
+                    startActivity(intent);
+                    getActivity().finish();
                 }
             }
         });
@@ -119,9 +125,9 @@ public class choose_AreaFragment extends Fragment {
         });
         queryProvinces();
     }
-/**
- * 查询全国所有的省，优先从数据库查询，如果没有查询到再从服务器上查询
- * */
+    /**
+     * 查询全国所有的省，优先从数据库查询，如果没有查询到再从服务器上查询
+     * */
     private void queryProvinces() {
         titleText.setText("中国");
         backButton.setVisibility(View.GONE);
@@ -133,7 +139,6 @@ public class choose_AreaFragment extends Fragment {
             }
             adapter.notifyDataSetChanged();
             listView.setSelection(0);
-
             currentLevel = LEVEL_PROVINCE;
         }else {
             String address = "http://guolin.tech/api/china";
@@ -170,7 +175,7 @@ public class choose_AreaFragment extends Fragment {
         titleText.setText(selectedCity.getCityName());
         backButton.setVisibility(View.VISIBLE);
         countyList = DataSupport.where("city = ?",String.valueOf(selectedCity
-        .getId())).find(County.class);
+                .getId())).find(County.class);
         if(countyList.size()>0){
             dataList.clear();
             for (County county:countyList){
@@ -203,8 +208,8 @@ public class choose_AreaFragment extends Fragment {
                     result = Utility.handleCityResponse(responseTest,
                             selectedProvince.getId());
                 }else if ("county".equals(type)){
-                result = Utility.handleCountyResponse(responseTest,
-                        selectedCity.getId());
+                    result = Utility.handleCountyResponse(responseTest,
+                            selectedCity.getId());
                 }
                 if(result){
                     getActivity().runOnUiThread(new Runnable() {
@@ -226,11 +231,11 @@ public class choose_AreaFragment extends Fragment {
             public void onFailure(Call call, IOException e) {
                 //通过runOnUiThread()方法回到主线程处理逻辑
                 getActivity().runOnUiThread(new Runnable() {
-                    @RequiresApi(api = Build.VERSION_CODES.M)
+
                     @Override
                     public void run() {
                         closeProgressDialog();
-                        Toast.makeText(getContext(),"加载失败",Toast.LENGTH_LONG).show();
+                        Toast.makeText(getContext(),"加载失败",Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -255,6 +260,4 @@ public class choose_AreaFragment extends Fragment {
             progressDialog.dismiss();
         }
     }
-
-
 }
